@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} — TrustHire AI{% endblock %}
+{% block content %}
+<section class="error-page section-wrap"><span class="eyebrow">THAT DIDN'T WORK</span><h1>{{ code }}</h1><p>{{ message }}</p><a class="btn btn-primary" href="{{ url_for('index') }}">Back to home</a></section>
+{% endblock %}

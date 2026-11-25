@@ -1,0 +1,31 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, "Segoe UI", sans-serif; background: #f5f7fb; color: #102a43; }
+.app { min-height: 100vh; display: grid; grid-template-columns: 238px 1fr; }
+aside { background: #0b1f3a; color: white; padding: 24px 16px; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px 28px; }
+.brand span { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; background:#2c71df; }
+nav { display:grid; gap:6px; }
+nav a { color:#b9c7d9; text-decoration:none; padding:12px 14px; border-radius:10px; }
+nav a.active, nav a:hover { background:#17365e; color:white; }
+main { padding:32px; max-width:1300px; width:100%; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+header p { margin:0 0 5px; color:#7a8ba3; font-size:12px; letter-spacing:.12em; }
+h1 { margin:0; font-size:30px; }
+header button { border:1px solid #dde4ec; background:white; padding:10px 14px; border-radius:10px; color:#334e68; }
+.metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.metrics article, .panel { background:white; border:1px solid #e7ecf2; border-radius:16px; padding:20px; box-shadow:0 8px 24px rgba(27,54,93,.04); }
+.metrics p { color:#627d98; margin:0 0 12px; }
+.metrics div { display:flex; justify-content:space-between; align-items:center; }
+.metrics strong { font-size:26px; }
+.metrics span { color:#278a54; background:#ecf7f1; padding:5px 8px; border-radius:99px; font-size:12px; }
+.grid { display:grid; grid-template-columns:1.35fr 1fr; gap:16px; margin-top:16px; }
+.panel-head { display:flex; justify-content:space-between; align-items:center; }
+.panel-head h2 { margin:0; font-size:18px; }
+.panel-head span { color:#829ab1; font-size:12px; }
+.chart { height:220px; display:flex; gap:12px; align-items:flex-end; border-bottom:1px solid #e4eaf1; margin-top:20px; padding:10px 8px 0; }
+.chart i { flex:1; background:linear-gradient(#76a9ef,#2c71df); border-radius:8px 8px 0 0; }
+.reports { display:grid; margin-top:12px; }
+.reports div { display:grid; gap:5px; border-bottom:1px solid #edf1f5; padding:14px 0; }
+.reports small { color:#829ab1; }
+.notice { margin-top:16px; color:#627d98; font-size:13px; }
+@media(max-width:900px){.app{grid-template-columns:76px 1fr}.brand strong,nav a{text-align:center}.brand{justify-content:center}.brand strong{display:none}nav a{font-size:0}.metrics{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}

@@ -1,0 +1,9 @@
+[
+  {"rule_id":"PAYMENT_ADVANCE","category":"Payment fraud","severity":"critical"},
+  {"rule_id":"OTP_PIN","category":"Personal data theft","severity":"critical"},
+  {"rule_id":"BANK_DETAILS","category":"Identity impersonation","severity":"high"},
+  {"rule_id":"UNREALISTIC_SALARY","category":"Suspicious recruitment","severity":"medium"},
+  {"rule_id":"URGENCY","category":"Suspicious recruitment","severity":"medium"},
+  {"rule_id":"FREE_EMAIL","category":"Identity impersonation","severity":"medium"},
+  {"rule_id":"SUSPICIOUS_LINK","category":"Malicious links","severity":"high"}
+]

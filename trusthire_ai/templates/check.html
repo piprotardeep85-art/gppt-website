@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Check a job — TrustHire AI{% endblock %}
+{% block content %}
+<section class="page-heading section-wrap"><span class="eyebrow">JOB POST ANALYSIS</span><h1>Check a job offer</h1><p>Paste the details you received. We’ll show the warning signals we can find.</p></section>
+{% if not readonly %}<section class="check-layout section-wrap">
+  <form class="panel check-form" method="post" action="{{ url_for('check_job') }}" id="job-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-heading"><span class="step-badge">01</span><div><h2>Job details</h2><p>Only include information you are comfortable sharing.</p></div></div>
+    <div class="form-grid">
+      <label>Job title <span class="optional">Optional</span><input name="job_title" maxlength="200" value="{{ payload.get('job_title','') }}" placeholder="e.g. Junior Marketing Associate"></label>
+      <label>Company name <span class="optional">Optional</span><input name="company_name" maxlength="200" value="{{ payload.get('company_name','') }}" placeholder="Company or recruiter name"></label>
+      <label>Company / job website <span class="optional">Optional</span><input name="website_url" type="url" maxlength="500" value="{{ payload.get('website_url','') }}" placeholder="https://company.example/jobs"></label>
+      <label>Recruiter email <span class="optional">Optional</span><input name="recruiter_email" type="email" maxlength="320" value="{{ payload.get('recruiter_email','') }}" placeholder="recruiter@company.example"></label>
+      <label class="full-field">Salary mentioned <span class="optional">Optional</span><input name="salary" maxlength="100" value="{{ payload.get('salary','') }}" placeholder="e.g. ₹35,000 per month"></label>
+      <label class="full-field">Paste the job post <span class="required">*</span><textarea name="job_text" id="job-text" required minlength="30" maxlength="20000" rows="10" placeholder="Paste the job description, email or message here...">{{ payload.get('job_text','') }}</textarea><span class="field-hint"><span id="char-count">0</span>/20,000 characters · Avoid including OTPs, passwords or bank credentials.</span></label>
+    </div>
+    <div class="sample-actions"><span>Try a sample:</span><button class="text-button" type="button" data-sample="fake">Suspicious post</button><button class="text-button" type="button" data-sample="genuine">Genuine-style post</button></div>
+    <button class="btn btn-primary btn-large analyze-button" id="analyze-button" type="submit"><span class="button-label">Analyze this job</span><span class="spinner" aria-hidden="true"></span><span>→</span></button>
+    <p class="privacy-note">🔒 Your scan is saved to this browser session or account history. Never submit passwords, OTPs or PINs.</p>
+  </form>
+  <aside class="side-note panel"><div class="side-note-icon">✦</div><h3>What we look for</h3><ul><li>Advance payment or training fees</li><li>Requests for sensitive information</li><li>Unusual urgency or chat-only hiring</li><li>Free email and shortened links</li><li>Salary claims that need context</li></ul><p>These are warning signals, not proof by themselves. Verify details independently.</p></aside>
+</section>{% else %}<section class="section-wrap readonly-toolbar"><a href="{{ url_for('history') }}" class="btn btn-outline">← Back to history</a></section>{% endif %}
+{% if result %}
+<section class="result-section section-wrap" id="scan-result">
+  <div class="result-topline"><div><span class="eyebrow">YOUR JOB CHECK</span><h2>Here’s what we found</h2></div><button class="btn btn-outline" onclick="window.print()">Download PDF report</button></div>
+  <div class="result-grid">
+    <article class="panel score-panel">
+      <div class="score-ring {{ result.label|lower }}" style="--score: {{ result.score }};"><div><strong>{{ result.score }}</strong><span>TRUST SCORE</span></div></div>
+      <span class="result-label label-{{ result.label|lower }}">{{ result.label }}</span>
+      <p class="confidence">{{ result.confidence }}</p><small>{{ result.score_basis }}</small>
+    </article>
+    <article class="panel flags-panel"><h3>Signals to review <span class="count-pill">{{ result.red_flags|length }}</span></h3>
+      {% if result.red_flags %}
+        {% for flag in result.red_flags %}<div class="flag-row"><span class="flag-mark">!</span><div><b>{{ flag.type }}</b><p>{{ flag.explanation }}</p><code>{{ flag.matched_text }}</code></div></div>{% endfor %}
+      {% else %}<div class="empty-state"><span>✓</span><h3>No configured red flags found</h3><p>This doesn’t verify the employer. Check official contacts before sharing sensitive information.</p></div>{% endif %}
+    </article>
+  </div>
+  {% if result.company_checks %}<article class="panel original-post company-checks"><h3>Company and contact checks</h3><div class="company-check-grid"><div><span>Website domain</span><b>{{ result.company_checks.website_domain or 'Not provided' }}</b></div><div><span>HTTPS</span><b>{{ 'Yes' if result.company_checks.website_uses_https else 'No / not provided' }}</b></div><div><span>Recruiter email domain</span><b>{{ result.company_checks.recruiter_email_domain or 'Not provided' }}</b></div><div><span>Official company match</span><b>{{ result.company_checks.official_company_match or 'Not verified' }}</b></div><div><span>Domain age</span><b>{{ result.company_checks.domain_age }}</b></div></div></article>{% endif %}
+  <article class="panel original-post"><h3>Original post <span class="subtle">Suspicious phrases are marked</span></h3>
+    <p class="highlighted-copy" id="original-job-post">{{ payload.get('job_text','') }}</p><script type="application/json" id="highlight-data">{{ result.highlighted_text|tojson }}</script>
+  </article>
+  <div class="notice notice-soft"><b>How to read this:</b> {{ result.limitations }} {% if scan_id %}<span>Scan #{{ scan_id }}</span>{% endif %}</div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/sample-posts.js') }}" defer></script>{% endblock %}

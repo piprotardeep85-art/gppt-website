@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}TrustHire AI — Check before you trust{% endblock %}
+{% block content %}
+<section class="hero section-wrap">
+  <div class="hero-copy">
+    <div class="eyebrow"><span class="pulse-dot"></span> A smarter way to evaluate job offers</div>
+    <h1>Good opportunities<br>should feel <em>right.</em></h1>
+    <p class="lead">Spot recruitment red flags before you share your details, pay a fee, or accept an offer.</p>
+    <div class="hero-actions"><a class="btn btn-primary btn-large" href="{{ url_for('check_job') }}">Check a job now <span>→</span></a>
+      <form action="{{ url_for('continue_guest') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-quiet btn-large">Continue as guest</button></form>
+    </div>
+    <div class="trust-note"><span class="avatar-stack"><i>✓</i><i>✓</i><i>✓</i></span><span>Private by design · Clear, explainable signals</span></div>
+  </div>
+  <div class="hero-visual">
+    <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+    <div class="shield-card"><div class="shield-icon">✓</div><div class="mini-label">JOB OFFER CHECK</div><h3>Know what to look for.</h3>
+      <div class="scan-row"><span class="status-icon green">✓</span><span><b>Recruiter details</b><small>Check the contact domain</small></span><span class="tag tag-green">Review</span></div>
+      <div class="scan-row"><span class="status-icon amber">!</span><span><b>Payment request</b><small>Advance fee language</small></span><span class="tag tag-amber">Caution</span></div>
+      <div class="scan-row"><span class="status-icon blue">↗</span><span><b>Job description</b><small>Context matters</small></span><span class="tag tag-blue">Scan</span></div>
+    </div><span class="floating-chip chip-one">✦ Explainable signals</span><span class="floating-chip chip-two">◎ Your data stays yours</span>
+  </div>
+</section>
+<section class="stats-strip section-wrap">
+  <div><strong>{{ stats.scans }}</strong><span>job checks performed</span></div><div><strong>{{ stats.reports }}</strong><span>community reports shared</span></div><div><strong>{{ stats.users }}</strong><span>job seekers joined</span></div><p>Live project activity</p>
+</section>
+<section class="section-wrap section-block" id="features">
+  <div class="section-heading"><span class="eyebrow">YOUR CAREER, YOUR CALL</span><h2>More context. <em>Better decisions.</em></h2><p>Understand the signals in an offer without being rushed into a yes or no.</p></div>
+  <div class="feature-grid">
+    <article class="feature-card"><span class="feature-icon purple">⌕</span><h3>Thoughtful job scan</h3><p>Review job text for payment, sensitive-data, urgency and suspicious-link warning signs.</p></article>
+    <article class="feature-card"><span class="feature-icon green">✳</span><h3>Reasons you can see</h3><p>Every warning includes a matched phrase and an explanation—no mystery verdicts.</p></article>
+    <article class="feature-card"><span class="feature-icon amber">◷</span><h3>Keep your checks close</h3><p>Review your scan history and trends in a personal dashboard.</p></article>
+  </div>
+</section>
+<section class="how-section" id="how"><div class="section-wrap section-block">
+  <div class="section-heading"><span class="eyebrow">THREE SIMPLE STEPS</span><h2>Pause. Check. <em>Choose.</em></h2></div>
+  <div class="steps-grid"><article><span>01</span><h3>Share the job details</h3><p>Paste a job post and optionally add the company, site, email or salary.</p></article><article><span>02</span><h3>See the signals</h3><p>Review the trust score, matched text and reasons behind each warning.</p></article><article><span>03</span><h3>Verify independently</h3><p>Use official company contacts and take time before sharing money or personal data.</p></article></div>
+</div></section>
+<section class="cta-band section-wrap"><div><span class="eyebrow">A QUICK CHECK CAN HELP</span><h2>Have a job offer in mind?</h2><p>Take a moment to review the details before you move forward.</p></div><a href="{{ url_for('check_job') }}" class="btn btn-white btn-large">Check a job now →</a></section>
+{% endblock %}

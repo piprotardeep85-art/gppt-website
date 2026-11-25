@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Log in or sign up — TrustHire AI{% endblock %}
+{% block content %}
+<section class="auth-wrap section-wrap"><div class="auth-intro"><span class="eyebrow">WELCOME TO TRUSTHIRE</span><h1>A little clarity can go a long way.</h1><p>Create an account to keep your checks together, or explore as a guest.</p><div class="auth-points"><span>✓ Private scan history</span><span>✓ Review your job checks</span><span>✓ No payment required</span></div></div>
+<div class="panel auth-card"><div class="auth-tabs"><button class="auth-tab active" data-tab="login">Log in</button><button class="auth-tab" data-tab="signup">Create account</button></div>
+<form method="post" id="login-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="login"><label>Email<input name="email" required type="email" autocomplete="email" placeholder="you@example.com"></label><label>Password<input name="password" required type="password" autocomplete="current-password" placeholder="Your password"></label><button class="btn btn-primary btn-large full-width">Log in</button></form>
+<form method="post" id="signup-form" hidden><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="signup"><label>Your name<input name="name" required minlength="2" autocomplete="name" placeholder="Your name"></label><label>Email<input name="email" required type="email" autocomplete="email" placeholder="you@example.com"></label><label>Password<input name="password" required minlength="8" type="password" autocomplete="new-password" placeholder="At least 8 characters"></label><button class="btn btn-primary btn-large full-width">Create my account</button></form>
+<div class="auth-divider"><span>or</span></div><form action="{{ url_for('continue_guest') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline btn-large full-width">Continue as guest</button></form>
+</div></section>
+{% endblock %}

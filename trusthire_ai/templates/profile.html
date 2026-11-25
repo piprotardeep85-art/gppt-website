@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Profile settings — TrustHire AI{% endblock %}
+{% block content %}
+<section class="page-heading section-wrap"><span class="eyebrow">ACCOUNT SETTINGS</span><h1>Your profile</h1><p>Update your account name and review your login email.</p></section>
+<div class="section-wrap profile-grid">
+<form class="panel profile-form" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="profile"><h2>Profile information</h2><label>Display name<input name="name" required minlength="2" maxlength="100" value="{{ user['name'] }}"></label><label>Email address<input disabled value="{{ user['email'] }}"></label><button class="btn btn-primary">Save profile</button></form>
+<form class="panel profile-form" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="password"><h2>Change password</h2><label>Current password<input name="current_password" required type="password" autocomplete="current-password"></label><label>New password<input name="new_password" required minlength="8" type="password" autocomplete="new-password"></label><button class="btn btn-outline">Update password</button></form>
+<form class="panel profile-form" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="language"><h2>Language preference</h2><label>Preferred language<select name="language"><option value="en" {{ 'selected' if user['language'] == 'en' }}>English</option><option value="gu" {{ 'selected' if user['language'] == 'gu' }}>ગુજરાતી</option></select></label><p class="field-hint">The preference is saved; some prototype pages currently display English text.</p><button class="btn btn-outline">Save preference</button></form>
+</div>
+{% endblock %}

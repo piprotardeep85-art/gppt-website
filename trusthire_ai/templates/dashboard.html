@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — TrustHire AI{% endblock %}
+{% block content %}
+<section class="page-heading section-wrap"><span class="eyebrow">YOUR OVERVIEW</span><h1>Your job-check dashboard</h1><p>A simple view of the offers you’ve reviewed.</p></section>
+<section class="section-wrap">
+  <div class="metric-grid"><article class="metric-card"><span>Total scans</span><strong>{{ total }}</strong><small>Job posts reviewed</small></article><article class="metric-card metric-red"><span>Fake flagged</span><strong>{{ fake_count }}</strong><small>Review the signals carefully</small></article><article class="metric-card metric-green"><span>Genuine label</span><strong>{{ genuine_count }}</strong><small>Still verify independently</small></article><article class="metric-card metric-blue"><span>Average trust score</span><strong>{{ avg_score }}<small>/100</small></strong><small>From your saved scans</small></article></div>
+  <div class="dashboard-grid"><article class="panel chart-panel"><div class="panel-title"><div><h2>Scan trends</h2><p>Checks per day</p></div><span class="chart-icon">⌁</span></div><canvas id="trend-chart" height="120" aria-label="Scans per day chart"></canvas></article><article class="panel chart-panel"><div class="panel-title"><div><h2>Result breakdown</h2><p>Genuine, suspicious and fake labels</p></div></div><canvas id="label-chart" height="180" aria-label="Scan labels chart"></canvas></article></div>
+  <div class="dashboard-grid lower-grid"><article class="panel table-panel"><div class="panel-title"><div><h2>Recent scans</h2><p>Your latest job checks</p></div><a href="{{ url_for('history') }}">View all →</a></div><div class="table-scroll"><table><thead><tr><th>Job / company</th><th>Score</th><th>Label</th><th>Date</th></tr></thead><tbody>{% for scan in scans %}<tr><td><b>{{ scan['job_title'] or 'Job post scan' }}</b><small>{{ scan['company_name'] or 'Company not provided' }}</small></td><td>{{ scan['score'] }}</td><td><span class="table-label label-{{ scan['label']|lower }}">{{ scan['label'] }}</span></td><td>{{ scan['created_at'][:10] }}</td></tr>{% else %}<tr><td colspan="4" class="empty-cell">No scans yet. <a href="{{ url_for('check_job') }}">Check a job to get started.</a></td></tr>{% endfor %}</tbody></table></div></article>
+  <article class="panel keyword-panel"><h2>Top warning signals</h2><p>From your scan history</p>{% for name,count in top_keywords %}<div class="keyword-row"><span>{{ name }}</span><b>{{ count }}</b><i style="--bar:{{ [count*12,100]|min }}%"></i></div>{% else %}<div class="empty-cell">Signals will appear here after your first scan.</div>{% endfor %}</article></div>
+  <div class="notice notice-soft">Scores and labels are screening signals, not proof of legitimacy or fraud. This dashboard reflects only your scans.</div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script><script>
+window.trustHireCharts = {labels: {{ chart_labels|safe }}, trend: {{ chart_data|safe }}, breakdown: {{ label_data|safe }}};
+</script>{% endblock %}
