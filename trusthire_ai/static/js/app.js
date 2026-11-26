@@ -19,6 +19,86 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateCount = () => { if (jobText && counter) counter.textContent = jobText.value.length.toLocaleString(); };
   jobText?.addEventListener('input', updateCount);
   updateCount();
+
+  const photoInput = document.querySelector('#job-photo');
+  const photoPreview = document.querySelector('#job-photo-preview');
+  const readPhotoButton = document.querySelector('#read-job-photo');
+  const photoStatus = document.querySelector('#photo-status');
+  let photoPreviewUrl;
+  const allowedPhotoTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+
+  photoInput?.addEventListener('change', () => {
+    const photo = photoInput.files?.[0];
+    if (!photo) return;
+
+    if (!allowedPhotoTypes.has(photo.type) || photo.size > 4 * 1024 * 1024) {
+      photoInput.value = '';
+      readPhotoButton.disabled = true;
+      photoPreview.hidden = true;
+      photoStatus.textContent = 'Choose a PNG, JPG or WebP image smaller than 4 MB.';
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+      return;
+    }
+
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    photoPreviewUrl = URL.createObjectURL(photo);
+    photoPreview.src = photoPreviewUrl;
+    photoPreview.hidden = false;
+    readPhotoButton.disabled = false;
+    photoStatus.textContent = 'Photo selected. Read the text, review it, then analyze the job.';
+  });
+
+  readPhotoButton?.addEventListener('click', async () => {
+    const photo = photoInput?.files?.[0];
+    if (!photo || !jobText) return;
+    if (!window.Tesseract) {
+      photoStatus.textContent = 'Photo text reading did not load. Check your internet connection and try again.';
+      return;
+    }
+
+    let worker;
+    readPhotoButton.disabled = true;
+    photoInput.disabled = true;
+    photoStatus.textContent = 'Loading English and Gujarati text recognition…';
+    try {
+      worker = await window.Tesseract.createWorker('eng+guj', 1, {
+        logger: (progress) => {
+          if (progress.status === 'recognizing text') {
+            photoStatus.textContent = `Reading photo… ${Math.round((progress.progress || 0) * 100)}%`;
+          }
+        },
+      });
+      const { data } = await worker.recognize(photo);
+      const recognizedText = data.text.trim();
+      if (!recognizedText) {
+        photoStatus.textContent = 'No text was found. Try a clearer, well-lit screenshot.';
+        return;
+      }
+
+      const existingText = jobText.value.trim();
+      const combinedText = existingText ? `${existingText}\n\n${recognizedText}` : recognizedText;
+      jobText.value = combinedText.slice(0, 20_000);
+      jobText.dispatchEvent(new Event('input', { bubbles: true }));
+      photoStatus.textContent = combinedText.length > 20_000
+        ? 'Text was added up to the 20,000-character limit. Review it before analysis.'
+        : 'Text added. Review the extracted text for OCR mistakes before analysis.';
+      jobText.focus();
+    } catch (error) {
+      console.error('Could not read text from the selected job photo.', error);
+      photoStatus.textContent = 'Could not read this photo. Try a clearer image or paste the job text instead.';
+    } finally {
+      if (worker) {
+        try {
+          await worker.terminate();
+        } catch (error) {
+          console.error('Could not stop the photo text reader.', error);
+        }
+      }
+      photoInput.disabled = false;
+      readPhotoButton.disabled = false;
+    }
+  });
+
   document.querySelectorAll('[data-sample]').forEach((button) => {
     button.addEventListener('click', () => {
       const sampleGroup = window.trustHireSamples?.[button.dataset.sample];

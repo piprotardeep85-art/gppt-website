@@ -13,6 +13,14 @@
       <label>Recruiter email <span class="optional">Optional</span><input name="recruiter_email" type="email" maxlength="320" value="{{ payload.get('recruiter_email','') }}" placeholder="recruiter@company.example"></label>
       <label class="full-field">Salary mentioned <span class="optional">Optional</span><input name="salary" maxlength="100" value="{{ payload.get('salary','') }}" placeholder="e.g. ₹35,000 per month"></label>
       <label class="full-field">Paste the job post <span class="required">*</span><textarea name="job_text" id="job-text" required minlength="30" maxlength="20000" rows="10" placeholder="Paste the job description, email or message here...">{{ payload.get('job_text','') }}</textarea><span class="field-hint"><span id="char-count">0</span>/20,000 characters · Avoid including OTPs, passwords or bank credentials.</span></label>
+      <label class="full-field">Job post photo <span class="optional">Optional · PNG, JPG or WebP · up to 4 MB</span><input id="job-photo" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      <div class="photo-tools full-field">
+        <img id="job-photo-preview" alt="Selected job post preview" hidden>
+        <div class="photo-tools-content">
+          <button class="btn btn-outline btn-small" id="read-job-photo" type="button" disabled>Read text from photo</button>
+          <p class="field-hint" id="photo-status" role="status" aria-live="polite">Choose a job screenshot from your device. Text extraction runs in your browser; review it before analysis.</p>
+        </div>
+      </div>
     </div>
     <div class="sample-actions"><span>Try a sample:</span><button class="text-button" type="button" data-sample="fake">Suspicious post</button><button class="text-button" type="button" data-sample="genuine">Genuine-style post</button></div>
     <button class="btn btn-primary btn-large analyze-button" id="analyze-button" type="submit"><span class="button-label">Analyze this job</span><span class="spinner" aria-hidden="true"></span><span>→</span></button>
@@ -43,4 +51,4 @@
 </section>
 {% endif %}
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/sample-posts.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" defer></script><script src="{{ url_for('static', filename='js/sample-posts.js') }}" defer></script>{% endblock %}

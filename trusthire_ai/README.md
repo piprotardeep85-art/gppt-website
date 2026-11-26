@@ -2,6 +2,8 @@
 
 TrustHire AI is a responsive Flask job-post screening site. It combines explainable rule checks with an optional saved scikit-learn TF-IDF + Logistic Regression model and stores accounts, scans and reports in SQLite.
 
+On the **Check a job** page, users can also choose a PNG, JPG or WebP job screenshot from their device. Browser-based OCR reads English and Gujarati text into the job-post field; review the extracted text for mistakes before analyzing. The image is processed in the browser and is not uploaded or saved with the scan. OCR needs an internet connection to load its JavaScript and language data.
+
 ## Project layout
 
 ```text
