@@ -4,6 +4,8 @@ TrustHire AI is a responsive Flask job-post screening site. It combines explaina
 
 On the **Check a job** page, users can also choose a PNG, JPG or WebP job screenshot from their device. Browser-based OCR reads English and Gujarati text into the job-post field; review the extracted text for mistakes before analyzing. The image is processed in the browser and is not uploaded or saved with the scan. OCR needs an internet connection to load its JavaScript and language data.
 
+On **Report a suspicious job**, include the full job requirement as well as the suspicious details. A later check of the same text (case and whitespace differences are ignored) shows matching reports only after an admin marks them **Reviewed**. The result shows the company, link and report details; reporter identity and uploaded screenshots remain private. A community report is a warning to investigate, not proof of fraud.
+
 ## Project layout
 
 ```text
@@ -59,11 +61,11 @@ The WiFi address only works on that local network. For a public URL, deploy to R
 
 ## Deploy on Render free plan
 
-The repository includes `render.yaml`, `Procfile`, and `runtime.txt` for a Render Blueprint deployment. Both Render configuration files start Gunicorn bound to Render's `PORT`; the Blueprint uses `/check` as its health check.
+The workspace root includes a `render.yaml` Blueprint for this monorepo; it sets `rootDir: trusthire_ai` so Render builds and starts the Flask app from the correct folder. The app folder also includes its own `render.yaml` for deployments where `trusthire_ai` is pushed as a standalone repository. Both configurations use `/check` as the health check and bind Gunicorn to Render's `PORT`.
 
-1. Push this project folder to a GitHub repository (commands below).
+1. Push the `trusthire_ai` changes and root-level `render.yaml` to the connected GitHub repository.
 2. Sign in at [Render](https://render.com/) and choose **New → Blueprint**.
-3. Connect the GitHub repository containing `app.py` at its root and select `render.yaml`.
+3. Connect the GitHub repository and select the root-level `render.yaml` Blueprint.
 4. Review the `trusthire-ai` web service and create it. The Blueprint uses `pip install -r requirements.txt` and `gunicorn app:app --bind 0.0.0.0:$PORT`.
 5. In the Render service's **Environment** settings, confirm that `SECRET_KEY` has a generated secret. Keep it private.
 6. Confirm `TRUSTHIRE_HTTPS=1` and `FLASK_DEBUG=0` are set. Render provides HTTPS for the public service.

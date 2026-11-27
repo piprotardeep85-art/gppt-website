@@ -31,6 +31,22 @@
 {% if result %}
 <section class="result-section section-wrap" id="scan-result">
   <div class="result-topline"><div><span class="eyebrow">YOUR JOB CHECK</span><h2>Here’s what we found</h2></div><button class="btn btn-outline" onclick="window.print()">Download PDF report</button></div>
+  {% if reported_jobs %}
+  <article class="panel community-reports">
+    <span class="eyebrow">ADMIN-REVIEWED COMMUNITY REPORT</span>
+    <h3>This job requirement has been reported before</h3>
+    <p class="community-note">The text matches a report reviewed by an admin. A report is an alert for further checking, not proof that the job or company is fraudulent.</p>
+    {% for report in reported_jobs %}
+    <div class="community-report">
+      <h4>{{ report['company_name'] }}</h4>
+      {% if report['job_link'] %}<a href="{{ report['job_link'] }}" target="_blank" rel="noopener noreferrer">View reported job post</a>{% endif %}
+      <p>{{ report['description'] }}</p>
+      <details><summary>View the reported job requirement</summary><p class="community-job-text">{{ report['job_text'] }}</p></details>
+      <small>Reviewed {{ report['created_at'][:10] }}</small>
+    </div>
+    {% endfor %}
+  </article>
+  {% endif %}
   <div class="result-grid">
     <article class="panel score-panel">
       <div class="score-ring {{ result.label|lower }}" style="--score: {{ result.score }};"><div><strong>{{ result.score }}</strong><span>TRUST SCORE</span></div></div>

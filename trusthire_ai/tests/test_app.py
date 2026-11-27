@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -91,7 +92,12 @@ def test_missing_model_logs_clear_fallback_message(tmp_path, monkeypatch, caplog
 
 def test_login_and_history_pages_load(client):
     assert client.get("/").status_code == 200
-    assert client.get("/auth").status_code == 200
+    login_response = client.get("/auth")
+    signup_response = client.get("/signup")
+    assert login_response.status_code == 200
+    assert signup_response.status_code == 200
+    assert b"Confirm password" not in login_response.data
+    assert b"Confirm password" in signup_response.data
     assert client.get("/history").status_code == 200
     assert client.get("/about").status_code == 200
     assert client.get("/report").status_code == 200
@@ -111,19 +117,103 @@ def test_report_rejects_javascript_link(client):
         assert count == 0
 
 
-def test_signup_does_not_allow_role_assignment(client):
-    client.get("/auth")
+def test_reviewed_report_is_shown_for_same_normalized_job_requirement(client):
+    client.get("/report")
     with client.session_transaction() as state:
         csrf = state["_csrf_token"]
-    response = client.post("/auth", data={
-        "csrf_token": csrf, "action": "signup", "name": "Test User",
+    job_text = "Customer support role. Send your CV and attend a standard interview."
+    client.post("/report", data={
+        "csrf_token": csrf,
+        "company_name": "Example Recruiting",
+        "job_link": "https://example.com/jobs/123",
+        "job_text": job_text,
+        "description": "The recruiter asked for an upfront processing fee.",
+    })
+
+    check_data = {
+        "csrf_token": csrf,
+        "job_text": "  CUSTOMER SUPPORT ROLE.\nSend your CV and attend a standard interview. ",
+    }
+    pending_response = client.post("/check", data=check_data)
+    assert b"This job requirement has been reported before" not in pending_response.data
+
+    with trusthire.app.app_context():
+        trusthire.get_db().execute(
+            "UPDATE reports SET status = 'reviewed' WHERE company_name = ?",
+            ("Example Recruiting",),
+        )
+        trusthire.get_db().commit()
+
+    reviewed_response = client.post("/check", data=check_data)
+    assert b"This job requirement has been reported before" in reviewed_response.data
+    assert b"Example Recruiting" in reviewed_response.data
+    assert b"upfront processing fee" in reviewed_response.data
+    assert b"View the reported job requirement" in reviewed_response.data
+    assert b"reporter" not in reviewed_response.data.lower()
+
+    different_response = client.post("/check", data={
+        "csrf_token": csrf,
+        "job_text": "Customer support role. Send your CV and complete a standard interview.",
+    })
+    assert b"This job requirement has been reported before" not in different_response.data
+
+
+def test_existing_reports_database_gets_job_requirement_columns(tmp_path, monkeypatch):
+    database = tmp_path / "existing.sqlite3"
+    connection = sqlite3.connect(database)
+    connection.execute(
+        """CREATE TABLE reports (
+            id INTEGER PRIMARY KEY, user_id INTEGER, guest_id TEXT,
+            company_name TEXT NOT NULL, job_link TEXT NOT NULL DEFAULT '',
+            description TEXT NOT NULL, screenshot_name TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL
+        )"""
+    )
+    connection.commit()
+    connection.close()
+
+    monkeypatch.setattr(trusthire, "DATABASE_PATH", database)
+    trusthire.initialize_database()
+
+    connection = sqlite3.connect(database)
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(reports)")}
+    connection.close()
+    assert {"job_text", "job_text_hash"} <= columns
+
+
+def test_signup_does_not_allow_role_assignment(client):
+    client.get("/signup")
+    with client.session_transaction() as state:
+        csrf = state["_csrf_token"]
+    response = client.post("/signup", data={
+        "csrf_token": csrf,
         "email": "test@example.com", "password": "long-password",
+        "confirm_password": "long-password",
         "role": "admin",
     })
     assert response.status_code == 302
     with trusthire.app.app_context():
-        user = trusthire.get_db().execute("SELECT role FROM users WHERE email = ?", ("test@example.com",)).fetchone()
+        user = trusthire.get_db().execute("SELECT name,role FROM users WHERE email = ?", ("test@example.com",)).fetchone()
+        assert user["name"] == "test"
         assert user["role"] == "user"
+
+
+def test_signup_rejects_mismatched_confirm_password(client):
+    client.get("/signup")
+    with client.session_transaction() as state:
+        csrf = state["_csrf_token"]
+    response = client.post("/signup", data={
+        "csrf_token": csrf,
+        "email": "test@example.com", "password": "long-password",
+        "confirm_password": "different-password",
+    })
+    assert response.status_code == 200
+    assert b"Passwords do not match." in response.data
+    with trusthire.app.app_context():
+        count = trusthire.get_db().execute(
+            "SELECT COUNT(*) FROM users WHERE email = ?", ("test@example.com",)
+        ).fetchone()[0]
+        assert count == 0
 
 
 def test_login_next_url_does_not_redirect_off_site(client):

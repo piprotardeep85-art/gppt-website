@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -12,6 +13,7 @@ import uuid
 from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path
+import unicodedata
 from urllib.parse import urlparse
 
 import joblib
@@ -167,6 +169,15 @@ def initialize_database() -> None:
     columns = {row[1] for row in db.execute("PRAGMA table_info(users)")}
     if "language" not in columns:
         db.execute("ALTER TABLE users ADD COLUMN language TEXT NOT NULL DEFAULT 'en'")
+    report_columns = {row[1] for row in db.execute("PRAGMA table_info(reports)")}
+    if "job_text" not in report_columns:
+        db.execute("ALTER TABLE reports ADD COLUMN job_text TEXT NOT NULL DEFAULT ''")
+    if "job_text_hash" not in report_columns:
+        db.execute("ALTER TABLE reports ADD COLUMN job_text_hash TEXT NOT NULL DEFAULT ''")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_reports_job_text_hash_status "
+        "ON reports(job_text_hash, status)"
+    )
     db.commit()
     db.close()
 
@@ -441,6 +452,16 @@ def insert_scan(payload: dict, result: dict) -> int:
     return int(cursor.lastrowid)
 
 
+def normalize_job_text(text: str) -> str:
+    normalized = unicodedata.normalize("NFC", text).casefold()
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def job_text_hash(text: str) -> str:
+    normalized = normalize_job_text(text)
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest() if normalized else ""
+
+
 @app.get("/")
 def index():
     db = get_db()
@@ -454,15 +475,26 @@ def index():
 
 @app.route("/auth", methods=["GET", "POST"])
 def auth():
+    return auth_page(signup_mode=False)
+
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    return auth_page(signup_mode=True)
+
+
+def auth_page(signup_mode):
     if request.method == "POST":
-        action = request.form.get("action")
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
-        if action == "signup":
-            name = request.form.get("name", "").strip()
-            if len(name) < 2 or len(password) < 8 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
-                flash("Enter a name, valid email and password with at least 8 characters.", "error")
+        if signup_mode:
+            confirm_password = request.form.get("confirm_password", "")
+            if password != confirm_password:
+                flash("Passwords do not match.", "error")
+            elif len(password) < 8 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+                flash("Enter a valid email and a password with at least 8 characters.", "error")
             else:
+                name = email.split("@", 1)[0][:100]
                 try:
                     cursor = get_db().execute(
                         "INSERT INTO users(name,email,password_hash,created_at) VALUES (?,?,?,?)",
@@ -490,7 +522,7 @@ def auth():
                     next_url = ""
                 return redirect(next_url or url_for("dashboard"))
             flash("Email or password is incorrect.", "error")
-    return render_template("auth.html")
+    return render_template("auth.html", signup=signup_mode)
 
 
 @app.post("/guest")
@@ -510,6 +542,7 @@ def check_job():
     result = None
     scan_id = None
     payload = {}
+    reported_jobs = []
     if request.method == "POST":
         payload = {
             "job_title": request.form.get("job_title", ""),
@@ -526,7 +559,24 @@ def check_job():
         else:
             result = analyze_job(payload)
             scan_id = insert_scan(payload, result)
-    return render_template("check.html", result=result, payload=payload, scan_id=scan_id)
+            requirement_hash = job_text_hash(payload["job_text"])
+            if requirement_hash:
+                candidates = get_db().execute(
+                    """SELECT company_name,job_link,description,job_text,created_at
+                       FROM reports
+                       WHERE status = 'reviewed' AND job_text_hash = ?
+                       ORDER BY created_at DESC LIMIT 10""",
+                    (requirement_hash,),
+                ).fetchall()
+                normalized_text = normalize_job_text(payload["job_text"])
+                reported_jobs = [
+                    report for report in candidates
+                    if normalize_job_text(report["job_text"]) == normalized_text
+                ]
+    return render_template(
+        "check.html", result=result, payload=payload, scan_id=scan_id,
+        reported_jobs=reported_jobs,
+    )
 
 
 @app.get("/dashboard")
@@ -606,6 +656,7 @@ def report_fake_job():
     if request.method == "POST":
         company = request.form.get("company_name", "").strip()
         description = request.form.get("description", "").strip()
+        job_text = request.form.get("job_text", "")
         job_link = request.form.get("job_link", "").strip()
         screenshot = request.files.get("screenshot")
         saved_name = ""
@@ -614,26 +665,39 @@ def report_fake_job():
             if parsed_job_link.scheme.lower() not in {"http", "https"} or not parsed_job_link.hostname:
                 flash("Job links must use a valid HTTP or HTTPS address.", "error")
                 return render_template("report.html")
-        if not company or len(description) < 15:
-            flash("Company name and a description of at least 15 characters are required.", "error")
-        elif screenshot and screenshot.filename:
+        if not company:
+            flash("Company name is required.", "error")
+            return render_template("report.html")
+        if len(description) < 15:
+            flash("Please describe what seemed suspicious in at least 15 characters.", "error")
+            return render_template("report.html")
+        if len(job_text.strip()) < 30:
+            flash("Please include at least 30 characters of the job requirement.", "error")
+            return render_template("report.html")
+        if len(job_text) > 20_000:
+            flash("The job requirement must be 20,000 characters or fewer.", "error")
+            return render_template("report.html")
+        if screenshot and screenshot.filename:
             extension = Path(screenshot.filename).suffix.lower().lstrip(".")
             if extension not in ALLOWED_IMAGE_EXTENSIONS:
                 flash("Screenshots must be PNG, JPG or WebP.", "error")
                 return render_template("report.html")
             saved_name = f"{uuid.uuid4().hex}.{extension}"
             screenshot.save(os.path.join(UPLOAD_DIR, secure_filename(saved_name)))
-        if company and len(description) >= 15:
-            user_id = session.get("user_id")
-            guest_id = session.get("guest_id")
-            get_db().execute(
-                "INSERT INTO reports(user_id,guest_id,company_name,job_link,description,screenshot_name,created_at) VALUES(?,?,?,?,?,?,?)",
-                (user_id, guest_id, company[:200], job_link[:500], description[:4000], saved_name,
-                 datetime.now(timezone.utc).isoformat()),
-            )
-            get_db().commit()
-            flash("Thanks. Your report was submitted for review.", "success")
-            return redirect(url_for("report_fake_job"))
+        user_id = session.get("user_id")
+        guest_id = session.get("guest_id")
+        get_db().execute(
+            """INSERT INTO reports
+               (user_id,guest_id,company_name,job_link,description,job_text,job_text_hash,
+                screenshot_name,created_at)
+               VALUES(?,?,?,?,?,?,?,?,?)""",
+            (user_id, guest_id, company[:200], job_link[:500], description[:4000],
+             job_text[:20_000], job_text_hash(job_text), saved_name,
+             datetime.now(timezone.utc).isoformat()),
+        )
+        get_db().commit()
+        flash("Thanks. Your report was submitted for review.", "success")
+        return redirect(url_for("report_fake_job"))
     return render_template("report.html")
 
 

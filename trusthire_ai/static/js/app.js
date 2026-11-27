@@ -117,15 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
     button?.querySelector('.button-label')?.replaceChildren(document.createTextNode('Analyzing job post…'));
   });
 
-  document.querySelectorAll('.auth-tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.auth-tab').forEach((item) => item.classList.toggle('active', item === tab));
-      const signup = tab.dataset.tab === 'signup';
-      document.querySelector('#signup-form').hidden = !signup;
-      document.querySelector('#login-form').hidden = signup;
-    });
-  });
-
   const search = document.querySelector('#history-search');
   const filter = document.querySelector('#history-filter');
   const filterRows = () => document.querySelectorAll('#history-table tbody tr[data-label]').forEach((row) => {

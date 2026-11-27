@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS reports (
     company_name TEXT NOT NULL,
     job_link TEXT NOT NULL DEFAULT '',
     description TEXT NOT NULL,
+    job_text TEXT NOT NULL DEFAULT '',
+    job_text_hash TEXT NOT NULL DEFAULT '',
     screenshot_name TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT NOT NULL
